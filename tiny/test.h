@@ -19,6 +19,16 @@ typedef enum
     ASSIGN,EQ,LT,PLUS,MINUS,TIMES,OVER,LPAREN,RPAREN,SEMI
 }TokenType;
 
+typedef enum
+{
+	START, 
+	INASSIGN, 
+	INCOMMENT, 
+	INNUM, 
+	INID, 
+	DONE 
+}StateType;
+
 class Token
 {
 public:

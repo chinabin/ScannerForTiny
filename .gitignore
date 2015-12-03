@@ -7,6 +7,7 @@
 *.filters
 *.suo
 *.opensdf
+loucomp/*
 
 # Precompiled Headers
 *.gch
