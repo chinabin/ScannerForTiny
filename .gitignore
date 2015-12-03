@@ -36,4 +36,5 @@ tiny.tlog/
 *.exe
 *.out
 *.log
+*.tlog
 *.app
