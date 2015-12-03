@@ -12,6 +12,8 @@
 # Precompiled Headers
 *.gch
 *.pdb
+*.idb
+tiny.tlog/
 *.pch
 
 # Compiled Dynamic libraries
