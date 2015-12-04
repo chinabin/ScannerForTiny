@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cstdbool>
 #include <iostream>
 #include <fstream>
 
@@ -40,13 +41,26 @@ class Scanner
 {
 public:
 	Scanner::Scanner(const string& src_name, const string& des_name);
-	void get_next_token();
 	~Scanner();
+	void get_next_token();
+	void unget();
+
+	string get_token_type();
+	string get_token_val() { return token.m_strval; }
+	bool is_end() { return m_end_of_file; }
+	int get_line_num() { return m_line_num; }
 
 private:
+	void get_next_line();
+
+	int m_line_length = -1;
+	int m_line_current_pos = 0;
+	int m_line_num = -1;
+	bool m_end_of_file = false;
+	string m_line;
+
 	string m_src_name;
 	string m_des_name;
-	string m_str;
 	Token token;
 	ifstream m_src_file;
 	ofstream m_des_file;

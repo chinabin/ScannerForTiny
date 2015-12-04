@@ -20,112 +20,225 @@ Scanner::~Scanner()
 	m_des_file.close();
 }
 
+void Scanner::unget()
+{
+
+}
+
+void Scanner::get_next_line()
+{
+	bool end_of_file = false;
+	if (m_line_current_pos >= m_line_length || m_line_length == -1)
+	{
+		if (std::getline(m_src_file, m_line))
+		{
+			m_line_num++;
+			// cout << m_line_num << ": " << m_line << endl;
+			m_line_length = m_line.length();
+			m_line_current_pos = 0;
+		}
+		else
+		{
+			m_end_of_file = true;
+		}
+	}
+}
+
 void Scanner::get_next_token(void)
 {
 	const int max_size_read = 255;
 	StateType state = START;
-	string line;
+	token.m_strval.clear();		// must clear
 	
-	while (std::getline(m_src_file, line))
+	get_next_line();
+
+	if (!m_end_of_file)
 	{
-		int length = line.length();
-		int current_pos = 0;
-		bool save = true;
-		switch (state)
+		while (true)
 		{
-		case START:
-			if (std::isdigit(line[current_pos]))
-				state = INNUM;
-			else if(std::isalpha(line[current_pos]))
-				state = INID;
-			else if (line[current_pos] == ':')
-				state = INASSIGN;
-			else if (std::isspace(line[current_pos]))
-				save = false;
-			else if (line[current_pos] == '{')
+			bool save = true;
+			bool unget = false;
+			get_next_line();
+			if (m_end_of_file)
+				break;
+			char c = m_line[m_line_current_pos];
+			switch (state)
 			{
-				state = INCOMMENT;
-				save = false;
-			}
-			else
-			{
-				state = DONE;
-				switch (line[current_pos])
-				{
-				case '=':
-					token.m_tokentype = EQ;
+				case START:
+					if (std::isdigit(c))
+						state = INNUM;
+					else if (std::isalpha(c))
+						state = INID;
+					else if (c == ':')
+						state = INASSIGN;
+					else if (std::isspace(c))
+						save = false;
+					else if (c == '{')
+					{
+						state = INCOMMENT;
+						save = false;
+					}
+					else
+					{
+						state = DONE;
+						switch (c)
+						{
+						case '=':
+							token.m_tokentype = EQ;
+							break;
+						case '<':
+							token.m_tokentype = LT;
+							break;
+						case '+':
+							token.m_tokentype = PLUS;
+							break;
+						case '-':
+							token.m_tokentype = MINUS;
+							break;
+						case '*':
+							token.m_tokentype = TIMES;
+							break;
+						case '/':
+							token.m_tokentype = OVER;
+							break;
+						case '(':
+							token.m_tokentype = LPAREN;
+							break;
+						case ')':
+							token.m_tokentype = RPAREN;
+							break;
+						case ';':
+							token.m_tokentype = SEMI;
+							break;
+						default:
+							token.m_tokentype = ERROR;
+							break;
+						}
+					}
 					break;
-				case '<':
-					token.m_tokentype = LT;
+				case INASSIGN:
+					state = DONE;
+					if (c == '=')
+						token.m_tokentype = ASSIGN;
+					else
+					{
+						save = false;
+						token.m_tokentype = ERROR;
+						unget = true;
+					}
 					break;
-				case '+':
-					token.m_tokentype = PLUS;
+				case INCOMMENT:
+					save = false;
+					if (c == '}')
+						state = START;
 					break;
-				case '-':
-					token.m_tokentype = MINUS;
+				case INNUM:
+					if (!isdigit(c))
+					{
+						unget = true;
+						save = false;
+						state = DONE;
+						token.m_tokentype = NUM;
+					}
 					break;
-				case '*':
-					token.m_tokentype = TIMES;
+				case INID:
+					if (!isalpha(c))
+					{
+						unget = true;
+						save = false;
+						state = DONE;
+						token.m_tokentype = ID;
+					}
 					break;
-				case '/':
-					token.m_tokentype = OVER;
-					break;
-				case '(':
-					token.m_tokentype = LPAREN;
-					break;
-				case ')':
-					token.m_tokentype = RPAREN;
-					break;
-				case ';':
-					token.m_tokentype = SEMI;
-					break;
+				case DONE:
 				default:
+					cout << "this is a bug!" << endl;
+					cout << "line num is: " << m_line_num << " in " << m_line_current_pos << endl;
+					cout << "string is: " << m_line << endl;
+					state = DONE;
 					token.m_tokentype = ERROR;
 					break;
-				}
 			}
-			break;
-		case INASSIGN:
-			state = DONE;
-			if (line[current_pos] == '=')
-				token.m_tokentype = ASSIGN;
-			else
-			{
-				save = false;
-				token.m_tokentype = ERROR;
-				unget = true;
-			}
-			break;
-		case INCOMMENT:
-			save = false;
-			if (line[current_pos] == '}')
-				state = START;
-			break;
-		case INNUM:
-			if (!isdigit(line[current_pos]))
-			{
-				unget = true;
-				save = false;
-				state = DONE;
-				token.m_tokentype = NUM;
-			}
-			break;
-		case INID:
-			if (!isalpha(line[current_pos]))
-			{
-				unget = true;
-				save = false;
-				state = DONE;
-				token.m_tokentype = ID;
-			}
-			break;
-		case DONE:
-		default:
-			cout << "this is a bug!" << endl;
-			state = DONE;
-			token.m_tokentype = ERROR;
-			break;
+			if (save)
+				token.m_strval.push_back(m_line[m_line_current_pos]);
+			if (unget)
+				m_line_current_pos--;
+			m_line_current_pos++;
+			if (state == DONE)
+				break;
 		}
-		current_pos++;
 	}
+}
+
+string Scanner::get_token_type()
+{
+	TokenType t = token.m_tokentype;
+	switch (t)
+	{
+		case IF: 
+			return "IF";
+			break;
+		case THEN:
+			return "THEN";
+			break;
+		case ELSE:
+			return "ELSE";
+			break;
+		case END:
+			return "END";
+			break;
+		case REPEAT:
+			return "REPEAT";
+			break;
+		case UNTIL:
+			return "UNTIL";
+			break;
+		case READ:
+			return "READ";
+			break;
+		case WRITE:
+			return "WRITE";
+			break;
+		case ID:
+			return "ID";
+			break;
+		case NUM:
+			return "NUM";
+			break;
+		case ASSIGN:
+			return "ASSIGN";
+			break;
+		case EQ:
+			return "EQ";
+			break;
+		case LT:
+			return "LT";
+			break;
+		case PLUS:
+			return "PLUS";
+			break;
+		case MINUS:
+			return "MINUS";
+			break;
+		case TIMES:
+			return "TIMES";
+			break;
+		case OVER:
+			return "OVER";
+			break;
+		case LPAREN:
+			return "LPAREN";
+			break;
+		case RPAREN:
+			return "RPAREN";
+			break;
+		case SEMI:
+			return "SEMI";
+			break;
+		case ENDFILE:
+		case ERROR:
+		default:
+			break;
+	}
+	return "";
 }
