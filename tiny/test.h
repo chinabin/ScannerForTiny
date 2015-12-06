@@ -1,69 +1,54 @@
 #pragma once
 
-#include <string>
 #include <cstdbool>
-#include <iostream>
-#include <fstream>
+#include <string>
+#include <cctype>
 
 using std::string;
-using std::ifstream;
-using std::ofstream;
 
-typedef enum
-{
-    ENDFILE,ERROR,
-    /* reserved words */
-    IF,THEN,ELSE,END,REPEAT,UNTIL,READ,WRITE,
-    /* multicharacter tokens */
-    ID,NUM,
-    /* special symbols */
-    ASSIGN,EQ,LT,PLUS,MINUS,TIMES,OVER,LPAREN,RPAREN,SEMI
-}TokenType;
+/*
+this function is for answer for C comment, if it
+is a C comment, it will return true, otherwise false;
+It does not support for nested comment yet.
 
-typedef enum
-{
-	START, 
-	INASSIGN, 
-	INCOMMENT, 
-	INNUM, 
-	INID, 
-	DONE 
-}StateType;
+*/
+bool scan_c_comment(string r_str);
 
-class Token
-{
-public:
-	TokenType m_tokentype;
-	string m_strval;
-};
+/*
+ this is extension of scan_c_comment, which can hanle nested C-style comment
+ below is the dot code, you can see the graph by excute them:
 
-class Scanner
-{
-public:
-	Scanner::Scanner(const string& src_name, const string& des_name);
-	~Scanner();
-	void get_next_token();
-	void unget();
+ digraph G {
 
-	string get_token_type();
-	string get_token_val() { return token.m_strval; }
-	bool is_end() { return m_end_of_file; }
-	int get_line_num() { return m_line_num; }
+ 1->2 [label = "/"];
 
-private:
-	void get_next_line();
+ 2->3 [label = "*"];
 
-	int m_line_length = -1;
-	int m_line_current_pos = 0;
-	int m_line_num = -1;
-	bool m_end_of_file = false;
-	string m_line;
+ 3->5 [label = "/"];
+ 3->3 [label = "other"];
+ 3->4 [label = "*"]
 
-	string m_src_name;
-	string m_des_name;
-	Token token;
-	ifstream m_src_file;
-	ofstream m_des_file;
-};
+ 4->7 [label = "/"];
+ 4->4 [label = "*"];
+ 4->3 [label = "other"];
 
+ 5->6 [label = "*"];
+ 5->3 [label = "other"];
 
+ 6->5 [label = "/"];
+ 6->6 [label = "other"];
+ 6->4 [label = "*"];
+
+ 7->8 [label = "other"];
+
+ 8->9 [label = "/"];
+ 8->4 [label = "*"];
+
+ 9->3 [label = "*"];
+ 9->8 [label = "other"];
+
+ }
+
+*/
+bool ex_scan_c_comment(string r_str);
+void test_scan_commnet();

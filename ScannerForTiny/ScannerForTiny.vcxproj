@@ -76,10 +76,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\tiny\Lex.cpp" />
     <ClCompile Include="..\tiny\test.cpp" />
     <ClCompile Include="..\tiny\tiny.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\tiny\Lex.h" />
     <ClInclude Include="..\tiny\test.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

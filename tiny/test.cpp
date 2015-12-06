@@ -1,244 +1,251 @@
 #include "test.h"
-#include <cctype>		// for isalpha()
-#include <cstdbool>
+#include <iostream>
+#include <vector>
+#include <iterator>
 
+using std::vector;
+using std::string;
 using std::cout;
 using std::endl;
 
-Scanner::Scanner(const string& src_name, const string& des_name)
+/*
+note: it use input character as the outer case test and the state as the inner case test.
+*/
+bool scan_c_comment(string r_str)
 {
-	m_src_file.open(src_name);
-	m_des_file.open(des_name);
-
-	m_src_name = src_name;
-	m_des_name = des_name;
-}
-
-Scanner::~Scanner()
-{
-	m_src_file.close();
-	m_des_file.close();
-}
-
-void Scanner::unget()
-{
-
-}
-
-void Scanner::get_next_line()
-{
-	bool end_of_file = false;
-	if (m_line_current_pos >= m_line_length || m_line_length == -1)
+	int state = 1;
+	int index = 0;
+	char c = r_str[index];
+	int length = r_str.length();
+	while ( index != length )
 	{
-		if (std::getline(m_src_file, m_line))
+		c = r_str[index];
+		switch ( c )
 		{
-			m_line_num++;
-			// cout << m_line_num << ": " << m_line << endl;
-			m_line_length = m_line.length();
-			m_line_current_pos = 0;
-		}
-		else
-		{
-			m_end_of_file = true;
-		}
-	}
-}
-
-void Scanner::get_next_token(void)
-{
-	const int max_size_read = 255;
-	StateType state = START;
-	token.m_strval.clear();		// must clear
-	
-	get_next_line();
-
-	if (!m_end_of_file)
-	{
-		while (true)
-		{
-			bool save = true;
-			bool unget = false;
-			get_next_line();
-			if (m_end_of_file)
-				break;
-			char c = m_line[m_line_current_pos];
+		case '/':
 			switch (state)
 			{
-				case START:
-					if (std::isdigit(c))
-						state = INNUM;
-					else if (std::isalpha(c))
-						state = INID;
-					else if (c == ':')
-						state = INASSIGN;
-					else if (std::isspace(c))
-						save = false;
-					else if (c == '{')
-					{
-						state = INCOMMENT;
-						save = false;
-					}
-					else
-					{
-						state = DONE;
-						switch (c)
-						{
-						case '=':
-							token.m_tokentype = EQ;
-							break;
-						case '<':
-							token.m_tokentype = LT;
-							break;
-						case '+':
-							token.m_tokentype = PLUS;
-							break;
-						case '-':
-							token.m_tokentype = MINUS;
-							break;
-						case '*':
-							token.m_tokentype = TIMES;
-							break;
-						case '/':
-							token.m_tokentype = OVER;
-							break;
-						case '(':
-							token.m_tokentype = LPAREN;
-							break;
-						case ')':
-							token.m_tokentype = RPAREN;
-							break;
-						case ';':
-							token.m_tokentype = SEMI;
-							break;
-						default:
-							token.m_tokentype = ERROR;
-							break;
-						}
-					}
-					break;
-				case INASSIGN:
-					state = DONE;
-					if (c == '=')
-						token.m_tokentype = ASSIGN;
-					else
-					{
-						save = false;
-						token.m_tokentype = ERROR;
-						unget = true;
-					}
-					break;
-				case INCOMMENT:
-					save = false;
-					if (c == '}')
-						state = START;
-					break;
-				case INNUM:
-					if (!isdigit(c))
-					{
-						unget = true;
-						save = false;
-						state = DONE;
-						token.m_tokentype = NUM;
-					}
-					break;
-				case INID:
-					if (!isalpha(c))
-					{
-						unget = true;
-						save = false;
-						state = DONE;
-						token.m_tokentype = ID;
-					}
-					break;
-				case DONE:
-				default:
-					cout << "this is a bug!" << endl;
-					cout << "line num is: " << m_line_num << " in " << m_line_current_pos << endl;
-					cout << "string is: " << m_line << endl;
-					state = DONE;
-					token.m_tokentype = ERROR;
-					break;
-			}
-			if (save)
-				token.m_strval.push_back(m_line[m_line_current_pos]);
-			if (unget)
-				m_line_current_pos--;
-			m_line_current_pos++;
-			if (state == DONE)
+			case 1:
+				state = 2;
 				break;
+			case 4:
+				state = 5;
+				break;
+			default:
+				break;
+			}
+			break;
+		case '*':
+			switch (state)
+			{
+			case 2:
+				state = 3;
+				break;
+			case 3:
+				state = 4;
+				break;
+			case 4:
+				break;
+			default:
+				break;
+			}
+			break;
+		default:
+			switch (state)
+			{
+			case 3:
+				break;
+			case 4:
+				state = 3;
+			default:
+				break;
+			}
+			break;
+		}
+		++index;
+		if (state == 5)
+		{
+			if (index == length)
+			{
+				std::cout << "good!" << std::endl;
+				return true;
+			}
+			else
+			{
+				std::cout << "there is a nested comment, which not supported yet!" << std::endl;
+				return false;
+			}
 		}
 	}
+	std::cout << "bad!" << std::endl;
+	return false;
 }
 
-string Scanner::get_token_type()
+bool ex_scan_c_comment(string r_str)
 {
-	TokenType t = token.m_tokentype;
-	switch (t)
+	int error_state = -1;
+	int nest = 0;
+	int state = 1;
+	int length = r_str.length();
+	if (!length)
+		return false;
+	int index_str = 0;
+	char c = r_str[index_str];
+	bool unfinished = true;
+	while (unfinished && (state != error_state))
 	{
-		case IF: 
-			return "IF";
+		switch (state)
+		{
+		case 1:
+			switch (c)
+			{
+			case '/':
+				state = 2;
+				break;
+			default:
+				state = error_state;
+				break;
+			}
 			break;
-		case THEN:
-			return "THEN";
+		case 2:
+			switch (c)
+			{
+			case '*':
+				state = 3;
+				nest++;
+				break;
+			default:
+				state = error_state;
+				break;
+			}
 			break;
-		case ELSE:
-			return "ELSE";
+		case 3:
+			switch (c)
+			{
+			case '/':
+				state = 5;
+				break;
+			case '*':
+				state = 4;
+				break;
+			default:		// others staty in state 3.
+				break;
+			}
 			break;
-		case END:
-			return "END";
+		case 4:
+			switch (c)
+			{
+			case '/':
+				state = 7;
+				nest--;
+				break;
+			case '*':
+				break;
+			default:
+				state = 3;
+				break;
+			}
 			break;
-		case REPEAT:
-			return "REPEAT";
+		case 5:
+			switch (c)
+			{
+			case '*':
+				state = 6;
+				nest++;
+				break; 
+			default:
+				state = 3;
+				break;
+			}
 			break;
-		case UNTIL:
-			return "UNTIL";
+		case 6:
+			switch (c)
+			{
+			case '*':
+				state = 4;
+				break;
+			case '/':
+				state = 5;
+				break;
+			default:
+				break;
+			}
 			break;
-		case READ:
-			return "READ";
+		case 7:	
+			if (length == index_str)
+				unfinished = false;
+			else if (!nest)
+				state = error_state;
+			else
+			{
+				state = 8;
+				--index_str;    // should return back
+			}
 			break;
-		case WRITE:
-			return "WRITE";
+		case 8:
+			switch (c)
+			{
+			case '*':
+				state = 4;
+				break;
+			case '/':
+				state = 9;
+				break;
+			default:
+				break;
+			}
 			break;
-		case ID:
-			return "ID";
+		case 9:
+			switch (c)
+			{
+			case '*':
+				state = 3;
+				nest++;
+				break;
+			default:
+				state = 8;
+				break;
+			}
 			break;
-		case NUM:
-			return "NUM";
-			break;
-		case ASSIGN:
-			return "ASSIGN";
-			break;
-		case EQ:
-			return "EQ";
-			break;
-		case LT:
-			return "LT";
-			break;
-		case PLUS:
-			return "PLUS";
-			break;
-		case MINUS:
-			return "MINUS";
-			break;
-		case TIMES:
-			return "TIMES";
-			break;
-		case OVER:
-			return "OVER";
-			break;
-		case LPAREN:
-			return "LPAREN";
-			break;
-		case RPAREN:
-			return "RPAREN";
-			break;
-		case SEMI:
-			return "SEMI";
-			break;
-		case ENDFILE:
-		case ERROR:
 		default:
+			std::cout << std::endl << "there is a error taken place." << std::endl;
 			break;
+		}
+		c = r_str[++index_str];
+		if (index_str == length)
+		{
+			unfinished = false;
+			break;
+		}
 	}
-	return "";
+	if ((state == 7) && (index_str == length) && !nest)
+	{
+		return true;
+	}
+	return false;
+}
+
+void test_scan_commnet()
+{
+	vector<string> vc_str{ "/*a/*haha*//*lala*/*/",
+		"/*/*/*/*/*sdfs/*   */4545*/*/dfg*/fdg*/*/",
+		"/*asdasda*/",
+	};
+	vector<bool> vb_rtn{ true, true, true
+	};
+	if (vc_str.size() != vb_rtn.size())
+	{
+		cout << "size not equal!" << endl;
+		return;
+	}
+	int index = 0;
+	for (auto str : vc_str)
+	{
+		if (vb_rtn[index] != ex_scan_c_comment(str))
+		{
+			cout << "item " << index << " get wrong: " << str << endl;
+			cout << "should be: " << (vb_rtn[index] ? "true" : "false") << endl << endl;
+		}
+		index++;
+	}
 }
